@@ -1,410 +1,552 @@
 // 全局变量
 let currentZoom = 1;
+let modalImage = null;
+let touchZoomInfo = null;
 let currentRotation = 0;
-let isDragging = false;
-let startX = 0;
-let startY = 0;
-let translateX = 0;
-let translateY = 0;
-let isModalOpen = false;
 
-// 触摸相关变量
-let touchStartDistance = 0;
-let touchStartZoom = 1;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartTranslateX = 0;
-let touchStartTranslateY = 0;
+// 触摸缩放相关变量
+let initialDistance = 0;
+let initialScale = 1;
+let isZooming = false;
 let lastTouchTime = 0;
-let touchCount = 0;
 
-// 初始化
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    initNavigation();
-    initMobileMenu();
-    initModal();
-    initTouchEvents();
-    // 移动端优化
-    addMobileTouchFeedback();
-    if (isMobileDevice()) {
-        showTouchHint();
-        // 禁用移动端的双击缩放
-        document.addEventListener('touchstart', function(e) {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-        
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(e) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, { passive: false });
-    }
+    initializeTabs();
+    initializeModal();
+    addMobileOptimizations();
 });
 
-// 导航初始化
-function initNavigation() {
-    // PC端侧边栏导航
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
-            switchTab(tabId, navItems);
-        });
-    });
+// 初始化标签页功能
+function initializeTabs() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
     
-    // 移动端导航
-    const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
-    mobileNavItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
-            switchTab(tabId, mobileNavItems);
-            closeMobileMenu();
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // 移除所有活动状态
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 添加当前活动状态
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
         });
     });
 }
 
-// 移动端菜单初始化
-function initMobileMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const mobileNav = document.getElementById('mobileNav');
+// 初始化模态框
+function initializeModal() {
+    modalImage = document.getElementById('modalImage');
     
-    if (menuToggle && mobileNav) {
-        menuToggle.addEventListener('click', function() {
-            mobileNav.classList.toggle('active');
-        });
-        
-        // 点击外部关闭菜单
-        document.addEventListener('click', function(e) {
-            if (!menuToggle.contains(e.target) && !mobileNav.contains(e.target)) {
-                mobileNav.classList.remove('active');
-            }
-        });
-    }
-}
-
-// 关闭移动端菜单
-function closeMobileMenu() {
-    const mobileNav = document.getElementById('mobileNav');
-    if (mobileNav) {
-        mobileNav.classList.remove('active');
-    }
-}
-
-// 切换标签页
-function switchTab(tabId, navItems) {
-    // 隐藏所有内容区域
-    const contentSections = document.querySelectorAll('.content-section');
-    contentSections.forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    // 显示目标内容区域
-    const targetSection = document.getElementById(tabId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-    
-    // 更新导航状态
-    navItems.forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    // 找到对应的导航项并激活
-    navItems.forEach(item => {
-        if (item.getAttribute('data-tab') === tabId) {
-            item.classList.add('active');
-        }
-    });
-    
-    // 同步PC端和移动端导航状态
-    const allNavItems = document.querySelectorAll('.nav-item, .mobile-nav-item');
-    allNavItems.forEach(item => {
-        if (item.getAttribute('data-tab') === tabId) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
-    });
-}
-
-// 模态框初始化
-function initModal() {
-    const modal = document.getElementById('imageModal');
-    const modalBackdrop = document.querySelector('.modal-backdrop');
-    
-    if (modalBackdrop) {
-        modalBackdrop.addEventListener('click', closeModal);
-    }
-    
-    // ESC键关闭模态框
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isModalOpen) {
+    // 点击模态框背景关闭
+    document.getElementById('imageModal').addEventListener('click', function(e) {
+        if (e.target === this) {
             closeModal();
         }
     });
-}
-
-// 打开模态框
-function openModal(imgElement) {
-    const modal = document.getElementById('imageModal');
-    const modalImage = document.getElementById('modalImage');
-    const modalTitle = document.getElementById('modalTitle');
     
-    if (modal && modalImage && modalTitle) {
-        modalImage.src = imgElement.src;
-        modalImage.alt = imgElement.alt;
-        modalTitle.textContent = imgElement.alt || '图片查看';
-        
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        isModalOpen = true;
-        
-        // 重置图片状态
-        resetImageState();
-        
-        // 添加触摸事件
-        addTouchZoomListeners();
-        
-        // 显示触摸提示
-        if (isMobileDevice()) {
-            showTouchHint();
+    // ESC键关闭模态框
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+    
+    // 添加滚轮缩放功能
+    document.getElementById('imageModal').addEventListener('wheel', function(e) {
+        if (e.target === modalImage) {
+            e.preventDefault();
+            
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        }
+    });
+    
+    // 添加双击缩放功能
+    modalImage.addEventListener('dblclick', function() {
+        if (currentZoom === 1) {
+            currentZoom = 2;
+        } else {
+            currentZoom = 1;
         }
         
-        // 防止背景滚动
-        document.body.style.overflow = 'hidden';
-    }
+        this.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        
+        if (currentZoom > 1) {
+            this.style.cursor = 'grab';
+            enableImageDrag();
+            
+            // 移动端放大时隐藏标题
+            if (isMobile() && currentZoom > 1.5) {
+                const modalTitle = document.getElementById('modalTitle');
+                if (modalTitle) {
+                    modalTitle.style.opacity = '0';
+                    modalTitle.style.pointerEvents = 'none';
+                }
+            }
+        } else {
+            this.style.cursor = 'default';
+            this.style.left = '0';
+            this.style.top = '0';
+            disableImageDrag();
+            
+            // 移动端缩小时重新显示标题
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.style.opacity = '1';
+                modalTitle.style.pointerEvents = 'auto';
+            }
+        }
+    });
+    
+    // 添加触摸事件监听
+    addTouchZoomListeners();
+}
+
+// 显示户型图
+function showFloorPlan(imageSrc, buildingName) {
+    const modal = document.getElementById('imageModal');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    modalImage.src = imageSrc;
+    modalTitle.textContent = buildingName + ' 户型图';
+    
+    // 重置缩放和位置
+    resetImageState();
+    
+    // 确保图片居中显示
+    centerImage();
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    modal.style.opacity = '0';
+    
+    // 添加淡入动画
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
+}
+
+// 打开图片模态框（用于平面图）
+function openModal(img) {
+    const modal = document.getElementById('imageModal');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    modalImage.src = img.src;
+    modalTitle.textContent = '徐桥二期小区平面图';
+    
+    // 重置缩放和位置
+    resetImageState();
+    
+    // 确保图片居中显示
+    centerImage();
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    modal.style.opacity = '0';
+    
+    // 添加淡入动画
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
 }
 
 // 关闭模态框
 function closeModal() {
     const modal = document.getElementById('imageModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
-        isModalOpen = false;
-        
-        // 恢复背景滚动
-        document.body.style.overflow = '';
-        
-        // 隐藏触摸提示
-        hideTouchHint();
-    }
-}
-
-// 显示楼栋户型图
-function showFloorPlan(imageSrc, title) {
-    const modal = document.getElementById('imageModal');
-    const modalImage = document.getElementById('modalImage');
-    const modalTitle = document.getElementById('modalTitle');
+    modal.style.opacity = '0';
     
-    if (modal && modalImage && modalTitle) {
-        modalImage.src = imageSrc;
-        modalImage.alt = title;
-        modalTitle.textContent = title;
-        
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        isModalOpen = true;
-        
-        // 重置图片状态
+    setTimeout(() => {
+        modal.style.display = 'none';
         resetImageState();
-        
-        // 添加触摸事件
-        addTouchZoomListeners();
-        
-        // 显示触摸提示
-        if (isMobileDevice()) {
-            showTouchHint();
-        }
-        
-        // 防止背景滚动
-        document.body.style.overflow = 'hidden';
-    }
+    }, 300);
 }
 
 // 放大图片
 function zoomIn() {
-    currentZoom = Math.min(currentZoom * 1.2, 5);
-    updateImageTransform();
+    if (!modalImage) {
+        return;
+    }
+    
+    if (currentZoom < 3) {
+        currentZoom += 0.2;
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        
+        if (currentZoom > 1) {
+            modalImage.style.cursor = 'grab';
+            enableImageDrag();
+        }
+        
+        // 移动端放大时隐藏标题
+        if (isMobile() && currentZoom > 1.5) {
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.style.opacity = '0';
+                modalTitle.style.pointerEvents = 'none';
+            }
+        }
+    }
 }
 
 // 缩小图片
 function zoomOut() {
-    currentZoom = Math.max(currentZoom / 1.2, 0.5);
-    updateImageTransform();
+    if (currentZoom > 0.5) {
+        currentZoom -= 0.2;
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        
+        if (currentZoom <= 1) {
+            modalImage.style.cursor = 'default';
+            disableImageDrag();
+            centerImage();
+        }
+        
+        // 移动端缩小时重新显示标题
+        if (isMobile() && currentZoom <= 1.5) {
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.style.opacity = '1';
+                modalTitle.style.pointerEvents = 'auto';
+            }
+        }
+    }
 }
 
 // 重置缩放
 function resetZoom() {
     currentZoom = 1;
     currentRotation = 0;
-    translateX = 0;
-    translateY = 0;
-    updateImageTransform();
-}
-
-// 旋转图片
-function rotateImage() {
-    currentRotation = (currentRotation + 90) % 360;
-    updateImageTransform();
-}
-
-// 更新图片变换
-function updateImageTransform() {
-    const modalImage = document.getElementById('modalImage');
-    if (modalImage) {
-        modalImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    modalImage.style.cursor = 'default';
+    modalImage.style.left = '0';
+    modalImage.style.top = '0';
+    disableImageDrag();
+    centerImage();
+    
+    // 重置时恢复标题显示
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) {
+        modalTitle.style.opacity = '1';
+        modalTitle.style.pointerEvents = 'auto';
     }
 }
+
+// 拖拽相关变量和函数
+let isDragging = false;
+let startX, startY, initialX = 0, initialY = 0;
+
+function dragStart(e) {
+    isDragging = true;
+    modalImage.style.cursor = 'grabbing';
+    
+    if (e.type === 'mousedown') {
+        startX = e.clientX - initialX;
+        startY = e.clientY - initialY;
+    } else {
+        startX = e.touches[0].clientX - initialX;
+        startY = e.touches[0].clientY - initialY;
+    }
+}
+
+function drag(e) {
+    if (!isDragging) return;
+    
+    e.preventDefault();
+    
+    let currentX, currentY;
+    if (e.type === 'mousemove') {
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+    } else {
+        currentX = e.touches[0].clientX - startX;
+        currentY = e.touches[0].clientY - startY;
+    }
+    
+    initialX = currentX;
+    initialY = currentY;
+    
+    modalImage.style.left = currentX + 'px';
+    modalImage.style.top = currentY + 'px';
+}
+
+function dragEnd() {
+    isDragging = false;
+    modalImage.style.cursor = 'grab';
+}
+
+// 启用图片拖拽
+function enableImageDrag() {
+    modalImage.addEventListener('mousedown', dragStart);
+    modalImage.addEventListener('mousemove', drag);
+    modalImage.addEventListener('mouseup', dragEnd);
+    modalImage.addEventListener('mouseleave', dragEnd);
+    
+    // 触摸事件支持
+    modalImage.addEventListener('touchstart', dragStart);
+    modalImage.addEventListener('touchmove', drag);
+    modalImage.addEventListener('touchend', dragEnd);
+}
+
+// 禁用图片拖拽
+function disableImageDrag() {
+    modalImage.removeEventListener('mousedown', dragStart);
+    modalImage.removeEventListener('mousemove', drag);
+    modalImage.removeEventListener('mouseup', dragEnd);
+    modalImage.removeEventListener('mouseleave', dragEnd);
+    modalImage.removeEventListener('touchstart', dragStart);
+    modalImage.removeEventListener('touchmove', drag);
+    modalImage.removeEventListener('touchend', dragEnd);
+}
+
+
+
+// 添加页面切换动画
+function switchTab(tabName) {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    // 移除所有活动状态
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    tabContents.forEach(content => content.classList.remove('active'));
+    
+    // 添加当前活动状态
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+}
+
+// 添加触摸滑动支持（移动端）
+let swipeStartX = 0;
+let swipeEndX = 0;
+
+document.addEventListener('touchstart', function(e) {
+    swipeStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', function(e) {
+    swipeEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+});
+
+function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = swipeStartX - swipeEndX;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+        const currentTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        
+        if (diff > 0 && currentTab === 'overview') {
+            // 向左滑动，切换到楼栋户型
+            switchTab('buildings');
+        } else if (diff < 0 && currentTab === 'buildings') {
+            // 向右滑动，切换到平面图
+            switchTab('overview');
+        }
+    }
+}
+
+// 添加加载动画
+window.addEventListener('load', function() {
+    document.body.classList.add('loaded');
+});
+
+// 图片懒加载优化
+function lazyLoadImages() {
+    const images = document.querySelectorAll('img');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src || img.src;
+                img.classList.remove('lazy');
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+    
+    images.forEach(img => imageObserver.observe(img));
+}
+
+// 如果支持 IntersectionObserver，启用懒加载
+if ('IntersectionObserver' in window) {
+    lazyLoadImages();
+}
+
+// 移动端检测
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (window.innerWidth <= 768 && 'ontouchstart' in window);
+}
+
+// 创建触摸缩放提示
+function createTouchZoomInfo() {
+    touchZoomInfo = document.createElement('div');
+    touchZoomInfo.className = 'touch-zoom-info';
+    touchZoomInfo.textContent = '双指缩放 • 双击放大 • 拖拽移动';
+    document.body.appendChild(touchZoomInfo);
+}
+
+// 显示触摸缩放提示
+function showTouchZoomInfo() {
+    if (isMobile() && touchZoomInfo) {
+        touchZoomInfo.classList.add('show');
+        setTimeout(() => {
+            hideTouchZoomInfo();
+        }, 3000);
+    }
+}
+
+// 隐藏触摸缩放提示
+function hideTouchZoomInfo() {
+    if (touchZoomInfo) {
+        touchZoomInfo.classList.remove('show');
+    }
+}
+
+
 
 // 重置图片状态
 function resetImageState() {
     currentZoom = 1;
     currentRotation = 0;
-    translateX = 0;
-    translateY = 0;
     isDragging = false;
-    updateImageTransform();
+    isTouchDragging = false;
+    initialX = 0;
+    initialY = 0;
+    modalImage.style.transform = 'scale(1) rotate(0deg)';
+    modalImage.style.left = '0px';
+    modalImage.style.top = '0px';
+    modalImage.style.transformOrigin = 'center center';
+    modalImage.style.cursor = 'default';
+    disableImageDrag();
 }
 
-// 触摸事件初始化
-function initTouchEvents() {
-    const modalImage = document.getElementById('modalImage');
-    if (modalImage) {
-        // 鼠标事件（PC端拖拽）
-        modalImage.addEventListener('mousedown', handleMouseDown);
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-        
-        // 双击放大
-        modalImage.addEventListener('dblclick', function() {
-            if (currentZoom === 1) {
-                zoomIn();
-            } else {
-                resetZoom();
-            }
-        });
+// 图片居中显示
+function centerImage() {
+    modalImage.style.left = '0px';
+    modalImage.style.top = '0px';
+    modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    modalImage.style.transformOrigin = 'center center';
+}
+
+// 旋转图片
+function rotateImage() {
+    currentRotation += 90;
+    if (currentRotation >= 360) {
+        currentRotation = 0;
     }
+    
+    // 确保旋转时保持当前的位置
+    const currentLeft = modalImage.style.left || '0px';
+    const currentTop = modalImage.style.top || '0px';
+    
+    modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    modalImage.style.left = currentLeft;
+    modalImage.style.top = currentTop;
+    
+    // 强制重绘以确保变化生效
+    modalImage.offsetHeight;
 }
 
-// 鼠标按下
-function handleMouseDown(e) {
-    if (!isModalOpen) return;
-    
-    isDragging = true;
-    startX = e.clientX - translateX;
-    startY = e.clientY - translateY;
-    
-    e.preventDefault();
-}
-
-// 鼠标移动
-function handleMouseMove(e) {
-    if (!isDragging || !isModalOpen) return;
-    
-    translateX = e.clientX - startX;
-    translateY = e.clientY - startY;
-    
-    updateImageTransform();
-    e.preventDefault();
-}
-
-// 鼠标释放
-function handleMouseUp() {
-    isDragging = false;
-}
+// 触摸相关变量（图片缩放拖拽专用）
+let touchStartX = 0;
+let touchStartY = 0;
+let touchCurrentX = 0;
+let touchCurrentY = 0;
+let imageStartX = 0;
+let imageStartY = 0;
+let isTouchDragging = false;
+let touchStartTime = 0;
 
 // 添加触摸缩放监听器
 function addTouchZoomListeners() {
-    const modalImage = document.getElementById('modalImage');
-    if (modalImage) {
-        modalImage.addEventListener('touchstart', handleTouchStart, { passive: false });
-        modalImage.addEventListener('touchmove', handleTouchMove, { passive: false });
-        modalImage.addEventListener('touchend', handleTouchEnd, { passive: false });
-    }
+    modalImage.addEventListener('touchstart', handleTouchStart, { passive: false });
+    modalImage.addEventListener('touchmove', handleTouchMove, { passive: false });
+    modalImage.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
-// 触摸开始
+// 处理触摸开始
 function handleTouchStart(e) {
-    if (!isModalOpen) return;
-    
     e.preventDefault();
+    const currentTime = Date.now();
     
-    const touches = e.touches;
-    touchCount = touches.length;
-    
-    if (touches.length === 1) {
-        // 单指拖拽
-        touchStartX = touches[0].clientX;
-        touchStartY = touches[0].clientY;
-        touchStartTranslateX = translateX;
-        touchStartTranslateY = translateY;
+    if (e.touches.length === 2) {
+        // 双指触摸，准备缩放
+        isZooming = true;
+        isTouchDragging = false;
+        initialDistance = getDistance(e.touches[0], e.touches[1]);
+        initialScale = currentZoom;
+    } else if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = currentTime;
         
-        // 双击检测
-        const currentTime = new Date().getTime();
+        // 检查双击
         if (currentTime - lastTouchTime < 300) {
-            handleDoubleTap();
+            handleDoubleTap(e);
+            return;
         }
         lastTouchTime = currentTime;
-    } else if (touches.length === 2) {
-        // 双指缩放
-        touchStartDistance = getDistance(touches[0], touches[1]);
-        touchStartZoom = currentZoom;
         
-        // 记录双指中心点
-        const centerX = (touches[0].clientX + touches[1].clientX) / 2;
-        const centerY = (touches[0].clientY + touches[1].clientY) / 2;
-        touchStartX = centerX;
-        touchStartY = centerY;
-        touchStartTranslateX = translateX;
-        touchStartTranslateY = translateY;
+        // 如果图片已放大，准备拖拽
+        if (currentZoom > 1) {
+            isTouchDragging = true;
+            const rect = modalImage.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(modalImage);
+            imageStartX = parseInt(computedStyle.left) || 0;
+            imageStartY = parseInt(computedStyle.top) || 0;
+        }
     }
 }
 
-// 触摸移动
+// 处理触摸移动
 function handleTouchMove(e) {
-    if (!isModalOpen) return;
-    
     e.preventDefault();
     
-    const touches = e.touches;
-    
-    if (touches.length === 1 && touchCount === 1) {
-        // 单指拖拽
-        const deltaX = touches[0].clientX - touchStartX;
-        const deltaY = touches[0].clientY - touchStartY;
-        
-        translateX = touchStartTranslateX + deltaX;
-        translateY = touchStartTranslateY + deltaY;
-        
-        updateImageTransform();
-    } else if (touches.length === 2) {
+    if (e.touches.length === 2 && isZooming) {
         // 双指缩放
-        const currentDistance = getDistance(touches[0], touches[1]);
-        const scale = currentDistance / touchStartDistance;
+        const currentDistance = getDistance(e.touches[0], e.touches[1]);
+        const scale = (currentDistance / initialDistance) * initialScale;
         
-        currentZoom = Math.max(0.5, Math.min(5, touchStartZoom * scale));
+        currentZoom = Math.min(Math.max(scale, 0.5), 15);
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
         
-        updateImageTransform();
+    } else if (e.touches.length === 1 && isTouchDragging && currentZoom > 1) {
+        // 单指拖拽
+        const touch = e.touches[0];
+        touchCurrentX = touch.clientX;
+        touchCurrentY = touch.clientY;
+        
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+        
+        const newX = imageStartX + deltaX;
+        const newY = imageStartY + deltaY;
+        
+        modalImage.style.left = newX + 'px';
+        modalImage.style.top = newY + 'px';
     }
 }
 
-// 触摸结束
+// 处理触摸结束
 function handleTouchEnd(e) {
-    if (!isModalOpen) return;
+    if (isZooming) {
+        isZooming = false;
+        initialDistance = 0;
+        initialScale = 1;
+    }
     
-    e.preventDefault();
+    isTouchDragging = false;
     
-    // 如果所有手指都离开了屏幕，重置触摸计数
-    if (e.touches.length === 0) {
-        touchCount = 0;
+    // 如果缩放小于等于1，重置位置
+    if (currentZoom <= 1) {
+        modalImage.style.left = '0px';
+        modalImage.style.top = '0px';
     }
 }
 
@@ -415,198 +557,87 @@ function getDistance(touch1, touch2) {
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// 双击处理
-function handleDoubleTap() {
-    if (currentZoom === 1) {
-        currentZoom = 2;
-    } else {
-        resetZoom();
-    }
-    updateImageTransform();
-}
-
-// 检测移动设备// 移动设备检测
-function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        ('ontouchstart' in window) ||
-        (navigator.maxTouchPoints > 0) ||
-        window.innerWidth <= 1024;
-}
-
-// 移动端触摸反馈
-function addMobileTouchFeedback() {
-    if (!isMobileDevice()) return;
-    
-    // 为所有可点击元素添加触摸反馈
-    const clickableElements = document.querySelectorAll('.building-item, .image-card, .mobile-nav-item, .control-btn');
-    
-    clickableElements.forEach(element => {
-        element.addEventListener('touchstart', function() {
-            this.style.transform = 'scale(0.95)';
-            this.style.transition = 'transform 0.1s ease';
-        }, { passive: true });
+// 处理双击事件
+function handleDoubleTap(e) {
+    if (currentZoom <= 1) {
+        currentZoom = 2.5;
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
         
-        element.addEventListener('touchend', function() {
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 100);
-        }, { passive: true });
-        
-        element.addEventListener('touchcancel', function() {
-            this.style.transform = '';
-        }, { passive: true });
-    });
-}
-
-// 显示触摸提示
-function showTouchHint() {
-    if (!isMobileDevice()) return;
-    
-    const touchHint = document.getElementById('touchHint');
-    if (touchHint) {
-        touchHint.classList.add('show');
-        
-        // 移动端5秒后自动隐藏，给用户更多时间阅读
-        setTimeout(() => {
-            hideTouchHint();
-        }, 5000);
-    }
-}
-
-// 隐藏触摸提示
-function hideTouchHint() {
-    const touchHint = document.getElementById('touchHint');
-    if (touchHint) {
-        touchHint.classList.remove('show');
-    }
-}
-
-// 窗口大小改变时的处理
-window.addEventListener('resize', function() {
-    if (isModalOpen) {
-        // 重置图片位置，避免超出边界
-        const modalImage = document.getElementById('modalImage');
-        if (modalImage) {
+        // 双击位置居中缩放
+        const touch = e.touches[0] || e.changedTouches[0];
+        if (touch) {
             const rect = modalImage.getBoundingClientRect();
-            const containerRect = modalImage.parentElement.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const offsetX = (touch.clientX - rect.left - centerX) * (currentZoom - 1);
+            const offsetY = (touch.clientY - rect.top - centerY) * (currentZoom - 1);
             
-            // 如果图片超出容器边界，重置位置
-            if (rect.left > containerRect.right || rect.right < containerRect.left ||
-                rect.top > containerRect.bottom || rect.bottom < containerRect.top) {
-                translateX = 0;
-                translateY = 0;
-                updateImageTransform();
-            }
+            modalImage.style.left = -offsetX + 'px';
+            modalImage.style.top = -offsetY + 'px';
         }
+    } else {
+        // 重置到原始状态
+        currentZoom = 1;
+        currentRotation = 0;
+        modalImage.style.transform = 'scale(1) rotate(0deg)';
+        modalImage.style.left = '0px';
+        modalImage.style.top = '0px';
     }
-});
+}
 
-// 防止图片拖拽的默认行为
-document.addEventListener('dragstart', function(e) {
-    if (e.target.tagName === 'IMG') {
-        e.preventDefault();
-    }
-});
-
-// 防止右键菜单（可选）
-document.addEventListener('contextmenu', function(e) {
-    if (isModalOpen && e.target.id === 'modalImage') {
-        e.preventDefault();
-    }
-});
-
-// 键盘快捷键
-document.addEventListener('keydown', function(e) {
-    if (!isModalOpen) return;
-    
-    switch(e.key) {
-        case 'Escape':
-            closeModal();
-            break;
-        case '+':
-        case '=':
-            e.preventDefault();
-            zoomIn();
-            break;
-        case '-':
-            e.preventDefault();
-            zoomOut();
-            break;
-        case '0':
-            e.preventDefault();
-            resetZoom();
-            break;
-        case 'r':
-        case 'R':
-            e.preventDefault();
-            rotateImage();
-            break;
-        case 'ArrowLeft':
-            e.preventDefault();
-            translateX -= 20;
-            updateImageTransform();
-            break;
-        case 'ArrowRight':
-            e.preventDefault();
-            translateX += 20;
-            updateImageTransform();
-            break;
-        case 'ArrowUp':
-            e.preventDefault();
-            translateY -= 20;
-            updateImageTransform();
-            break;
-        case 'ArrowDown':
-            e.preventDefault();
-            translateY += 20;
-            updateImageTransform();
-            break;
-    }
-});
-
-// 滚轮缩放（PC端）
-document.addEventListener('wheel', function(e) {
-    if (!isModalOpen) return;
-    
-    const modalImage = document.getElementById('modalImage');
-    if (modalImage && e.target === modalImage) {
-        e.preventDefault();
+// 添加移动端优化
+function addMobileOptimizations() {
+    if (isMobile()) {
+        // 确保视口设置正确
+        let viewport = document.querySelector('meta[name="viewport"]');
+        if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            document.head.appendChild(viewport);
+        }
+        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
         
-        if (e.deltaY < 0) {
-            zoomIn();
-        } else {
-            zoomOut();
+        // 只在模态框打开时防止页面缩放
+        document.addEventListener('touchmove', function(e) {
+            const modal = document.getElementById('imageModal');
+            if (modal && modal.style.display === 'block' && e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // 优化滚动性能
+        document.body.style.webkitOverflowScrolling = 'touch';
+        
+        // 确保页面内容可见
+        document.body.style.minHeight = '100vh';
+        document.body.style.position = 'relative';
+    }
+}
+
+// 优化的缩放函数
+function zoomInOptimized() {
+    if (currentZoom < 15) {
+        currentZoom = Math.min(currentZoom + 0.5, 15);
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        
+        if (currentZoom > 1) {
+            modalImage.style.cursor = 'grab';
+            enableImageDrag();
         }
     }
-}, { passive: false });
+}
 
-// 页面加载完成后的初始化
-window.addEventListener('load', function() {
-    // 预加载图片
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-        if (img.complete) {
-            img.style.opacity = '1';
-        } else {
-            img.addEventListener('load', function() {
-                this.style.opacity = '1';
-            });
+function zoomOutOptimized() {
+    if (currentZoom > 0.5) {
+        currentZoom = Math.max(currentZoom - 0.5, 0.5);
+        modalImage.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        
+        if (currentZoom <= 1) {
+            modalImage.style.cursor = 'default';
+            modalImage.style.left = '0';
+            modalImage.style.top = '0';
+            disableImageDrag();
+            centerImage();
         }
-    });
-    
-    // 添加加载动画
-    document.body.classList.add('loaded');
-});
-
-// 错误处理
-window.addEventListener('error', function(e) {
-    console.error('页面错误:', e.error);
-});
-
-// 图片加载错误处理
-document.addEventListener('error', function(e) {
-    if (e.target.tagName === 'IMG') {
-        console.error('图片加载失败:', e.target.src);
-        e.target.style.display = 'none';
     }
-}, true);
+}
