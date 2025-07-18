@@ -24,7 +24,26 @@ document.addEventListener('DOMContentLoaded', function() {
     initMobileMenu();
     initModal();
     initTouchEvents();
-    showTouchHint();
+    // 移动端优化
+    addMobileTouchFeedback();
+    if (isMobileDevice()) {
+        showTouchHint();
+        // 禁用移动端的双击缩放
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    }
 });
 
 // 导航初始化
@@ -406,11 +425,37 @@ function handleDoubleTap() {
     updateImageTransform();
 }
 
-// 检测移动设备
+// 检测移动设备// 移动设备检测
 function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-           ('ontouchstart' in window) || 
-           (navigator.maxTouchPoints > 0);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        ('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0) ||
+        window.innerWidth <= 1024;
+}
+
+// 移动端触摸反馈
+function addMobileTouchFeedback() {
+    if (!isMobileDevice()) return;
+    
+    // 为所有可点击元素添加触摸反馈
+    const clickableElements = document.querySelectorAll('.building-item, .image-card, .mobile-nav-item, .control-btn');
+    
+    clickableElements.forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+            this.style.transition = 'transform 0.1s ease';
+        }, { passive: true });
+        
+        element.addEventListener('touchend', function() {
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        }, { passive: true });
+        
+        element.addEventListener('touchcancel', function() {
+            this.style.transform = '';
+        }, { passive: true });
+    });
 }
 
 // 显示触摸提示
@@ -421,10 +466,10 @@ function showTouchHint() {
     if (touchHint) {
         touchHint.classList.add('show');
         
-        // 3秒后自动隐藏
+        // 移动端5秒后自动隐藏，给用户更多时间阅读
         setTimeout(() => {
             hideTouchHint();
-        }, 3000);
+        }, 5000);
     }
 }
 
