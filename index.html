@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>徐桥二期安置房 - 户型查看</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>徐桥二期安置房</h1>
+            <p class="subtitle">户型图查看系统</p>
+        </header>
+
+        <!-- 导航栏 -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="overview">小区平面图</button>
+            <button class="tab-btn" data-tab="buildings">楼栋户型</button>
+        </nav>
+
+        <!-- 小区平面图页面 -->
+        <div id="overview" class="tab-content active">
+            <div class="section-card">
+                <h2>小区总体规划</h2>
+                <div class="image-container">
+                    <img src="%E5%BE%90%E6%A1%A5%E4%BA%8C%E6%9C%9F%E5%B9%B3%E9%9D%A2%E5%9B%BE.jpg" alt="徐桥二期平面图" class="main-image" onclick="openModal(this)">
+                </div>
+                <p class="image-desc">点击图片可放大查看详细信息</p>
+            </div>
+        </div>
+
+        <!-- 楼栋户型页面 -->
+        <div id="buildings" class="tab-content">
+            <div class="buildings-grid">
+                <div class="building-card" onclick="showFloorPlan('%E4%B8%80%E4%BA%8C%E4%B8%89%E5%9B%9B%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '一二三四号楼')">
+                    <div class="building-icon">🏢</div>
+                    <h3>一二三四号楼</h3>
+                    <p>查看户型图</p>
+                </div>
+                
+                <div class="building-card" onclick="showFloorPlan('%E4%BA%94%E5%85%AD%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '五六号楼')">
+                    <div class="building-icon">🏢</div>
+                    <h3>五六号楼</h3>
+                    <p>查看户型图</p>
+                </div>
+                
+                <div class="building-card" onclick="showFloorPlan('%E4%B8%83%E5%85%AB%E4%B9%9D%E5%8D%81%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '七八九十号楼')">
+                    <div class="building-icon">🏢</div>
+                    <h3>七八九十号楼</h3>
+                    <p>查看户型图</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片模态框 -->
+        <div id="imageModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <img id="modalImage" src="" alt="">
+                <div class="modal-title" id="modalTitle"></div>
+                <div class="modal-controls">
+                    <button onclick="zoomIn()">放大</button>
+                    <button onclick="zoomOut()">缩小</button>
+                    <button onclick="resetZoom()">重置</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部信息 -->
+        <footer class="footer">
+            <p>燕山乡安置办</p>
+            <p class="contact">如有疑问，请联系安置办工作人员</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
