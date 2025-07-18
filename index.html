@@ -2,80 +2,247 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>徐桥二期安置房 - 户型查看</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <h1>徐桥嘉苑（南苑）安置房</h1>
-            <p class="subtitle">小区平面图及户型图查看</p>
+    <!-- 主容器 -->
+    <div class="app-container">
+        <!-- 侧边栏导航 (PC端) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🏠</div>
+                    <h1>徐桥嘉苑</h1>
+                </div>
+                <p class="subtitle">南苑安置房</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="overview">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-text">小区平面图</span>
+                </button>
+                <button class="nav-item" data-tab="buildings">
+                    <span class="nav-icon">🏢</span>
+                    <span class="nav-text">楼栋户型</span>
+                </button>
+                <button class="nav-item" data-tab="info">
+                    <span class="nav-icon">ℹ️</span>
+                    <span class="nav-text">项目信息</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <p>燕山乡安置办</p>
+                <p class="status">网站建设中</p>
+            </div>
+        </aside>
+        
+        <!-- 移动端顶部导航 -->
+        <header class="mobile-header">
+            <div class="mobile-header-content">
+                <div class="mobile-logo">
+                    <span class="mobile-logo-icon">🏠</span>
+                    <div class="mobile-title">
+                        <h1>徐桥嘉苑</h1>
+                        <p>南苑安置房</p>
+                    </div>
+                </div>
+                <button class="menu-toggle" id="menuToggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            
+            <nav class="mobile-nav" id="mobileNav">
+                <button class="mobile-nav-item active" data-tab="overview">
+                    <span class="nav-icon">🗺️</span>
+                    <span>小区平面图</span>
+                </button>
+                <button class="mobile-nav-item" data-tab="buildings">
+                    <span class="nav-icon">🏢</span>
+                    <span>楼栋户型</span>
+                </button>
+                <button class="mobile-nav-item" data-tab="info">
+                    <span class="nav-icon">ℹ️</span>
+                    <span>项目信息</span>
+                </button>
+            </nav>
         </header>
-
-        <!-- 导航栏 -->
-        <nav class="nav-tabs">
-            <button class="tab-btn active" data-tab="overview">小区平面图</button>
-            <button class="tab-btn" data-tab="buildings">楼栋户型</button>
-        </nav>
-
-        <!-- 小区平面图页面 -->
-        <div id="overview" class="tab-content active">
-            <div class="section-card">
-                <h2>小区总体规划</h2>
-                <div class="image-container">
-                    <img src="%E5%BE%90%E6%A1%A5%E4%BA%8C%E6%9C%9F%E5%B9%B3%E9%9D%A2%E5%9B%BE.jpg" alt="徐桥二期平面图" class="main-image" onclick="openModal(this)">
-                </div>
-                <p class="image-desc">点击图片可放大查看详细信息</p>
-            </div>
-        </div>
-
-        <!-- 楼栋户型页面 -->
-        <div id="buildings" class="tab-content">
-            <div class="buildings-grid">
-                <div class="building-card" onclick="showFloorPlan('%E4%B8%80%E4%BA%8C%E4%B8%89%E5%9B%9B%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '一二三四号楼')">
-                    <div class="building-icon">🏢</div>
-                    <h3>一二三四号楼</h3>
-                    <p>查看户型图</p>
+        
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 小区平面图页面 -->
+            <section id="overview" class="content-section active">
+                <div class="section-header">
+                    <h2>小区总体规划</h2>
+                    <p>点击图片可放大查看详细信息</p>
                 </div>
                 
-                <div class="building-card" onclick="showFloorPlan('%E4%BA%94%E5%85%AD%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '五六号楼')">
-                    <div class="building-icon">🏢</div>
-                    <h3>五六号楼</h3>
-                    <p>查看户型图</p>
+                <div class="image-showcase">
+                    <div class="image-card">
+                        <img src="徐桥二期平面图.jpg" 
+                             alt="徐桥二期平面图" 
+                             class="showcase-image" 
+                             onclick="openModal(this)">
+                        <div class="image-overlay">
+                            <div class="overlay-content">
+                                <span class="zoom-icon">🔍</span>
+                                <p>点击查看大图</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="building-card" onclick="showFloorPlan('%E4%B8%83%E5%85%AB%E4%B9%9D%E5%8D%81%E5%8F%B7%E6%A5%BC%E6%88%B7%E5%9E%8B%E5%9B%BE.jpg', '七八九十号楼')">
-                    <div class="building-icon">🏢</div>
-                    <h3>七八九十号楼</h3>
-                    <p>查看户型图</p>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon">📐</div>
+                        <h3>规划面积</h3>
+                        <p>待定</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🏗️</div>
+                        <h3>建设进度</h3>
+                        <p>竣工</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🏠</div>
+                        <h3>总户数</h3>
+                        <p>680户</p>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- 图片模态框 -->
-        <div id="imageModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <img id="modalImage" src="" alt="">
-                <div class="modal-title" id="modalTitle"></div>
-                <div class="modal-controls">
-                <button onclick="zoomOut()" title="缩小图片">➖</button>
-                <button onclick="resetZoom()" title="重置缩放">🔄</button>
-                <button onclick="zoomIn()" title="放大图片">➕</button>
-                <button onclick="rotateImage()" title="旋转图片">↻</button>
-            </div>
-            </div>
-        </div>
-
-        <!-- 底部信息 -->
-        <footer class="footer">
-            <p>燕山乡安置办</p>
-            <p class="contact">施工中，未完待续</p>
-        </footer>
+            </section>
+            
+            <!-- 楼栋户型页面 -->
+            <section id="buildings" class="content-section">
+                <div class="section-header">
+                    <h2>楼栋户型图</h2>
+                    <p>选择楼栋查看对应户型图</p>
+                </div>
+                
+                <div class="buildings-container">
+                    <div class="building-item" onclick="showFloorPlan('一二三四号楼户型图.jpg', '一二三四号楼户型图')">
+                        <div class="building-visual">
+                            <div class="building-icon orange">🏢</div>
+                            <div class="building-number">1-4</div>
+                        </div>
+                        <div class="building-info">
+                            <h3>一二三四号楼</h3>
+                            <p>查看户型图</p>
+                            <div class="building-status">90+90+90+90户型</div>
+                        </div>
+                    </div>
+                    
+                    <div class="building-item" onclick="showFloorPlan('五六号楼户型图.jpg', '五六号楼户型图')">
+                        <div class="building-visual">
+                            <div class="building-icon green">🏢</div>
+                            <div class="building-number">5-6</div>
+                        </div>
+                        <div class="building-info">
+                            <h3>五六号楼</h3>
+                            <p>查看户型图</p>
+                            <div class="building-status">135+90+90+135户型</div>
+                        </div>
+                    </div>
+                    
+                    <div class="building-item" onclick="showFloorPlan('七八九十号楼户型图.jpg', '七八九十号楼户型图')">
+                        <div class="building-visual">
+                            <div class="building-icon blue">🏢</div>
+                            <div class="building-number">7-10</div>
+                        </div>
+                        <div class="building-info">
+                            <h3>七八九十号楼</h3>
+                            <p>查看户型图</p>
+                            <div class="building-status">90+45+45+90户型</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 项目信息页面 -->
+            <section id="info" class="content-section">
+                <div class="section-header">
+                    <h2>项目信息</h2>
+                    <p>徐桥二期安置房项目详细信息</p>
+                </div>
+                
+                <div class="info-content">
+                    <div class="info-section">
+                        <h3>项目概况</h3>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <span class="label">项目名称：</span>
+                                <span class="value">徐桥嘉苑（南苑）安置房</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">建设单位：</span>
+                                <span class="value">燕山乡安置办</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">项目状态：</span>
+                                <span class="value status-building">规划建设中</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3>联系方式</h3>
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <span class="contact-icon">📞</span>
+                                <span>咨询电话：待公布</span>
+                            </div>
+                            <div class="contact-item">
+                                <span class="contact-icon">📍</span>
+                                <span>项目地址：燕山乡徐桥村</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
-
+    
+    <!-- 图片查看模态框 -->
+    <div id="imageModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle">图片查看</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <span>✕</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <img id="modalImage" src="" alt="">
+            </div>
+            
+            <div class="modal-controls">
+                <button class="control-btn" onclick="zoomOut()" title="缩小">
+                    <span>➖</span>
+                </button>
+                <button class="control-btn" onclick="resetZoom()" title="重置">
+                    <span>🔄</span>
+                </button>
+                <button class="control-btn" onclick="zoomIn()" title="放大">
+                    <span>➕</span>
+                </button>
+                <button class="control-btn" onclick="rotateImage()" title="旋转">
+                    <span>↻</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 触摸提示 -->
+    <div class="touch-hint" id="touchHint">
+        <span>双指缩放 • 双击放大 • 拖拽移动</span>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
