@@ -243,6 +243,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: var(--spacing-md) var(--spacing-lg);
+    min-height: 60px;
 }
 
 .mobile-logo {
@@ -298,6 +299,12 @@ body {
     padding: var(--spacing-md);
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 199;
+    box-shadow: var(--shadow-lg);
 }
 
 .mobile-nav.active {
@@ -837,6 +844,7 @@ body {
     .main-content {
         margin-left: 0;
         padding: var(--spacing-lg);
+        padding-top: calc(80px + var(--spacing-lg));
     }
     
     .sidebar {
@@ -847,17 +855,14 @@ body {
         display: block;
     }
     
-    .main-content {
-        padding-top: calc(80px + var(--spacing-lg));
-    }
-    
     .info-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
     }
     
     .buildings-container {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         gap: var(--spacing-lg);
     }
     
@@ -867,11 +872,13 @@ body {
         gap: var(--spacing-md);
         padding: var(--spacing-xl);
         min-height: 120px;
+        width: 100%;
         touch-action: manipulation;
     }
     
     /* 移动端触摸优化 */
     .image-card {
+        width: 100%;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
     }
@@ -896,7 +903,7 @@ body {
 @media (max-width: 768px) {
     .main-content {
         padding: var(--spacing-md);
-        padding-top: calc(80px + var(--spacing-md));
+        padding-top: calc(90px + var(--spacing-md));
     }
     
     .section-header {
@@ -910,6 +917,18 @@ body {
     
     .section-header p {
         font-size: var(--font-size-base);
+    }
+    
+    .info-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .buildings-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
     }
     
     /* 移动端图片卡片全宽显示 */
@@ -983,7 +1002,7 @@ body {
 @media (max-width: 480px) {
     .main-content {
         padding: var(--spacing-sm);
-        padding-top: calc(70px + var(--spacing-sm));
+        padding-top: calc(85px + var(--spacing-sm));
     }
     
     .mobile-header-content {
@@ -1006,6 +1025,20 @@ body {
     
     .section-header p {
         font-size: var(--font-size-sm);
+    }
+    
+    /* 确保信息网格在超小屏幕上正确显示 */
+    .info-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    /* 确保楼栋容器在超小屏幕上正确显示 */
+    .buildings-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
     }
     
     /* 超小屏幕卡片优化 */
